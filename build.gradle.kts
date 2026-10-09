@@ -40,10 +40,23 @@ subprojects {
                 )
                 project.name.endsWith("-8") -> {
                     options.compilerArgs.add("-XDignore.symbol.file=true")
+                    // Run the toolchain's javac 8 as an external process: the
+                    // in-process compiler path does not honor
+                    // -XDignore.symbol.file the way the javac 8 binary does
+                    // (verified: the same binary compiles the sources cleanly
+                    // when invoked directly).
+                    val toolchainService =
+                        project.extensions.getByType(JavaToolchainService::class.java)
+                    val jdk8Home = toolchainService.toolchainFor {
+                        languageVersion.set(JavaLanguageVersion.of(8))
+                    }.map { it.installationPath }
+                    options.fork = true
+                    options.forkOptions.javaHome.set(jdk8Home)
                     doFirst {
                         println(
-                            "[${project.name}] javac compilerArgs = " +
-                                options.compilerArgs
+                            "[${project.name}] fork=" + options.fork +
+                                " javaHome=" + options.forkOptions.javaHome.orNull +
+                                " args=" + options.compilerArgs
                         )
                     }
                 }
