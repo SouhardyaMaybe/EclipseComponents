@@ -40,10 +40,11 @@ subprojects {
                 )
                 project.name.endsWith("-8") -> {
                     options.compilerArgs.add("-XDignore.symbol.file=true")
-                    // Fork the toolchain's javac 8 executable: the in-process
-                    // compiler path does not honor -XDignore.symbol.file the
-                    // way the javac 8 binary does (verified: the same binary
-                    // compiles these sources cleanly when invoked directly).
+                    // Fork the toolchain's javac 8 executable as an external
+                    // command: the in-process compiler path does not honor
+                    // -XDignore.symbol.file the way the javac 8 binary does
+                    // (verified: the same binary compiles these sources
+                    // cleanly when invoked directly).
                     val toolchainService =
                         project.extensions.getByType(JavaToolchainService::class.java)
                     val javac8 = toolchainService.compilerFor {
@@ -52,13 +53,10 @@ subprojects {
                         it.metadata.installationPath.asFile
                             .resolve("bin/javac").absolutePath
                     }
-                    options.fork = true
-                    options.forkOptions.executable = javac8.get()
+                    options.fork(mapOf("executable" to javac8.get()))
                     doFirst {
                         println(
-                            "[${project.name}] fork=" + options.fork +
-                                " executable=" + options.forkOptions.executable +
-                                " args=" + options.compilerArgs
+                            "[${project.name}] args=" + options.compilerArgs
                         )
                     }
                 }
