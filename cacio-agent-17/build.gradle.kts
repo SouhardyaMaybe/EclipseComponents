@@ -11,7 +11,10 @@ java {
 }
 
 dependencies {
+    // Upstream's agent pom depends on both shared and tta: the ctc.* classes
+    // (CTCFontManager etc.) live in the tta module, not shared.
     api(project(":cacio-shared-17"))
+    api(project(":cacio-tta-17"))
 }
 
 tasks.jar {
