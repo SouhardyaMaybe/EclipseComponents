@@ -14,18 +14,3 @@ base { archivesName.set("cacio-shared-1.19.1-SNAPSHOT") }
 java {
     toolchain { languageVersion.set(JavaLanguageVersion.of(17)) }
 }
-
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(
-        listOf(
-            "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.awt.event=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.awt.datatransfer=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.font=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.java2d=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.java2d.pipe=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.swing=ALL-UNNAMED"
-        )
-    )
-}

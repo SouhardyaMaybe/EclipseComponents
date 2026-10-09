@@ -19,14 +19,4 @@ dependencies {
     implementation("org.assertj:assertj-swing-junit:3.17.1")
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(
-        listOf(
-            "--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.awt.image=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.font=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.java2d=ALL-UNNAMED",
-            "--add-exports=java.desktop/sun.swing=ALL-UNNAMED"
-        )
-    )
-}
+
