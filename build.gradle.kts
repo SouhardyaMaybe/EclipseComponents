@@ -38,8 +38,15 @@ subprojects {
                         "--add-exports=java.base/java.security.PrivilegedAction=ALL-UNNAMED"
                     )
                 )
-                project.name.endsWith("-8") ->
+                project.name.endsWith("-8") -> {
                     options.compilerArgs.add("-XDignore.symbol.file=true")
+                    doFirst {
+                        println(
+                            "[${project.name}] javac compilerArgs = " +
+                                options.compilerArgs
+                        )
+                    }
+                }
             }
             // DRAFT: tests are vendored for reference but not executed by CI.
             // Iterate per-module if/when the test suites are wired up.
