@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Premain-Class: com.movtery.optifine_renamer.MainAgent
+Agent-Class: com.movtery.optifine_renamer.MainAgent
+
