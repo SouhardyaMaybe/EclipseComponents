@@ -145,5 +145,5 @@ jobs:
             --notes-file dist/RELEASE_NOTES.md
           echo "published ${TAG}"
           gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" \
-            --json name,tagName,isDraft,isLatest,url,assets \
-            --jq '{name,tagName,isDraft,isLatest,url,assets:[.assets[].name]}'
+            --json name,tagName,isDraft,isPrerelease,url,assets \
+            --jq '{name,tagName,isDraft,isPrerelease,url,assets:[.assets[].name]}'
