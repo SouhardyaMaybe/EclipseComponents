@@ -13,6 +13,17 @@ subprojects {
     }
 
     plugins.withId("java-library") {
+        // The launcher pins exact file names (README.md "Modules" table, and
+        // NOTICE.md). Gradle's default archive name appends the project
+        // version, so `base { archivesName }` alone would emit
+        // `<archivesName>-0.1.0.jar` and the asset swap into
+        // `EclipseLauncher/libs` / `.../assets/components/**` would not be a
+        // pure copy. Pin every jar's file name to `<archivesName>.<ext>` so
+        // `<module>/build/libs/<name>` is exactly the released asset.
+        tasks.withType<Jar>().configureEach {
+            archiveFileName.set(archiveBaseName.map { "$it.${archiveExtension.get()}" })
+        }
+
         tasks.withType<JavaCompile>().configureEach {
             options.encoding = "UTF-8"
             // The cacio modules compile against pre-module JDK internals

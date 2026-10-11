@@ -1,0 +1,149 @@
+name: release
+
+# Tag-triggered release pipeline (push a tag named `components-v*`, e.g.
+# `components-v1.0.0`). It builds every module with the same toolchain setup
+# as build.yml, stages the jars under the exact file names the launcher app
+# consumes, adds SHA256SUMS.txt, and publishes a GitHub release whose body
+# maps each asset to its path in the Eclipse app repository.
+#
+# build.yml stays untouched and also fires on tag pushes: it may create the
+# release first and attach the same jars. The publish step below therefore
+# creates-or-reuses the release and re-uploads with --clobber, so either
+# order converges on the same final release.
+
+on:
+  push:
+    tags:
+      - "components-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Same setup as build.yml: JDK 17 runs Gradle, the module toolchains
+      # (8 and 17) resolve from these JDKs plus foojay auto-provisioning.
+      - name: Set up JDKs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      # DRAFT: main jars only (vendored tests are not wired), same scope as
+      # build.yml.
+      - name: Build all module jars
+        run: |
+          gradle \
+            :exp4j:jar \
+            :java-sandbox:jar \
+            :installer-agent:jar \
+            :optifine-renamer:jar \
+            :cacio-shared-8:jar \
+            :cacio-androidnw-8:jar \
+            :cacio-shared-17:jar \
+            :cacio-tta-17:jar \
+            :cacio-agent-17:jar \
+            :mio-lib-patcher:jar \
+            --no-daemon --stacktrace
+
+      # Single source of truth for the release: `module|asset (= file name the
+      # launcher expects)|path in the app repo`. Every asset is a byte-for-byte
+      # copy of `<module>/build/libs/<asset>`; the build scripts pin the archive
+      # file name so no renaming or repacking happens here.
+      - name: Stage assets and generate release notes
+        env:
+          COMPONENTS: |
+            exp4j|exp4j-0.4.9-SNAPSHOT.jar|EclipseLauncher/libs/exp4j-0.4.9-SNAPSHOT.jar
+            java-sandbox|pro-grade.jar|EclipseLauncher/src/main/assets/components/components/pro-grade.jar
+            installer-agent|forge_installer.jar|EclipseLauncher/src/main/assets/components/components/forge_installer.jar
+            optifine-renamer|OptiFineRenamer.jar|EclipseLauncher/src/main/assets/components/components/OptiFineRenamer.jar
+            mio-lib-patcher|MioLibPatcher.jar|EclipseLauncher/src/main/assets/components/components/MioLibPatcher.jar
+            cacio-shared-8|cacio-shared-1.10-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo/cacio-shared-1.10-SNAPSHOT.jar
+            cacio-androidnw-8|cacio-androidnw-1.10-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo/cacio-androidnw-1.10-SNAPSHOT.jar
+            cacio-shared-17|cacio-shared-1.19.1-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-shared-1.19.1-SNAPSHOT.jar
+            cacio-tta-17|cacio-tta-1.19.1-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-tta-1.19.1-SNAPSHOT.jar
+            cacio-agent-17|cacio-agent.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-agent.jar
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          {
+            echo "Built from \`${GITHUB_SHA}\` of ${GITHUB_REPOSITORY} by [run ${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
+            echo
+            echo "## Asset to launcher-path mapping"
+            echo
+            echo "| Release asset | Launcher path | Gradle module |"
+            echo "| --- | --- | --- |"
+          } > dist/RELEASE_NOTES.md
+
+          while IFS='|' read -r module asset apppath; do
+            [ -n "${module}" ] || continue
+            src="${module}/build/libs/${asset}"
+            if [ ! -f "${src}" ]; then
+              echo "::error::expected jar not found: ${src}"
+              exit 1
+            fi
+            cp "${src}" "dist/${asset}"
+            echo "| \`${asset}\` | \`${apppath}\` | \`${module}\` |" >> dist/RELEASE_NOTES.md
+            echo "staged ${asset} from ${src} -> ${apppath}"
+          done <<< "${COMPONENTS}"
+
+          (cd dist && sha256sum *.jar > SHA256SUMS.txt)
+
+          {
+            echo
+            echo "## Notes"
+            echo
+            echo "- \`java_sandbox.policy\` is NOT an asset of this release: no module in this"
+            echo "  monorepo produces it. The \`java-sandbox\` module is the pro-grade library"
+            echo "  (\`pro-grade.jar\`); the policy text itself is authored and shipped by the"
+            echo "  app at \`EclipseLauncher/src/main/assets/components/components/java_sandbox.policy\`."
+            echo "- \`pro-grade.jar\` comes from the \`java-sandbox\` module (see NOTICE.md)."
+            echo "- Deltas versus the jars the app currently ships (do not repack; documented for"
+            echo "  the consuming swap): \`OptiFineRenamer.jar\` is a thin jar - it does NOT bundle"
+            echo "  \`org.objectweb.asm\`, unlike the current app blob - and \`MioLibPatcher.jar\` is a"
+            echo "  superset (newer upstream transformers). The remaining jars differ only by"
+            echo "  missing Maven \`META-INF/maven/**\` metadata from the original Maven builds."
+            echo "- Not covered by this repo at all: \`ResConfHack.jar\`, \`MioFabricAgent.jar\`,"
+            echo "  \`log4j-rce-patch-*.xml\` (see README.md)."
+          } >> dist/RELEASE_NOTES.md
+
+          echo "--- SHA256SUMS.txt ---"
+          cat dist/SHA256SUMS.txt
+          echo "--- release notes ---"
+          cat dist/RELEASE_NOTES.md
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          title="EclipseComponents ${TAG}"
+          # build.yml's tag path may have created the release already.
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1 ||
+            gh release create "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+              --title "${title}" \
+              --notes-file dist/RELEASE_NOTES.md \
+              --verify-tag ||
+            echo "release was created concurrently; reusing it"
+          gh release upload "${TAG}" --repo "${GITHUB_REPOSITORY}" --clobber \
+            dist/*.jar dist/SHA256SUMS.txt
+          gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --title "${title}" \
+            --notes-file dist/RELEASE_NOTES.md
+          echo "published ${TAG}"
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" \
+            --json name,tagName,isDraft,isLatest,url,assets \
+            --jq '{name,tagName,isDraft,isLatest,url,assets:[.assets[].name]}'

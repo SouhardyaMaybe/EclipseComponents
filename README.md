@@ -50,9 +50,13 @@ gradle :exp4j:jar            # one module
 
 Jar outputs land in `<module>/build/libs/`.
 
-CI (`.github/workflows/build.yml`) builds every module on each push, uploads
-each jar as a workflow artifact, and attaches jars to a GitHub release when a
-tag is pushed.
+CI (`.github/workflows/build.yml`) builds every module on each push and
+uploads each jar as a workflow artifact; a tag push also triggers it, and its
+per-module job may attach jars to the release for that tag. Pushing a tag
+matching `components-v*` additionally runs `.github/workflows/release.yml`,
+which builds all modules, stages the jars under the exact file names the
+launcher consumes, adds `SHA256SUMS.txt`, and publishes (or completes) the
+GitHub release with a per-asset launcher-path mapping.
 
 DRAFT notes for the first CI iterations:
 
