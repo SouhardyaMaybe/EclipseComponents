@@ -27,7 +27,9 @@ tasks.jar {
     // CI workflows invoke `gradle :mio-fabric-agent:jar`.
     from(provider {
         sourceSets.main.get().runtimeClasspath
-            .filter { !it.isDirectory }
+            // `isFile` (not `!isDirectory`): this module has no resources, so
+            // `build/resources/main` may not exist and zipTree would fail on it.
+            .filter { it.isFile }
             .map { zipTree(it) }
     }) {
         // Our generated MANIFEST.MF stays authoritative; dependency
