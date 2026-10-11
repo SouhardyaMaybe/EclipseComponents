@@ -23,5 +23,7 @@ include(
     ":cacio-shared-17",
     ":cacio-tta-17",
     ":cacio-agent-17",
-    ":mio-lib-patcher"
+    ":mio-lib-patcher",
+    ":mio-fabric-agent",
+    ":resconf-hack"
 )

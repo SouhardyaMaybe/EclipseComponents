@@ -56,6 +56,8 @@ jobs:
             :cacio-tta-17:jar \
             :cacio-agent-17:jar \
             :mio-lib-patcher:jar \
+            :mio-fabric-agent:jar \
+            :resconf-hack:jar \
             --no-daemon --stacktrace
 
       # Single source of truth for the release: `module|asset (= file name the
@@ -75,6 +77,8 @@ jobs:
             cacio-shared-17|cacio-shared-1.19.1-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-shared-1.19.1-SNAPSHOT.jar
             cacio-tta-17|cacio-tta-1.19.1-SNAPSHOT.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-tta-1.19.1-SNAPSHOT.jar
             cacio-agent-17|cacio-agent.jar|EclipseLauncher/src/main/assets/components/caciocavallo17/cacio-agent.jar
+            mio-fabric-agent|MioFabricAgent.jar|EclipseLauncher/src/main/assets/components/components/MioFabricAgent.jar
+            resconf-hack|ResConfHack.jar|EclipseLauncher/src/main/assets/components/caciocavallo/ResConfHack.jar
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -117,7 +121,13 @@ jobs:
             echo "  \`MioLibPatcher.jar\` is a superset (newer upstream transformers). The remaining"
             echo "  jars differ only by missing Maven \`META-INF/maven/**\` metadata from the"
             echo "  original Maven builds."
-            echo "- Not covered by this repo at all: \`ResConfHack.jar\`, \`MioFabricAgent.jar\`,"
+            echo "- \`MioFabricAgent.jar\` and \`ResConfHack.jar\` are own rewrites (v1.0.2) of the"
+            echo "  former opaque prebuilts - no public upstream source exists for either; see"
+            echo "  each module's \`UPSTREAM.md\`. Behavior deltas vs the originals are documented"
+            echo "  there: \`MioFabricAgent.jar\` bundles ASM 9.7.1 (the original bundled ASM"
+            echo "  5.0.1) and \`ResConfHack.jar\` drops the original manifest's dangling"
+            echo "  \`Main-Class\` (a class that was never inside the jar)."
+            echo "- Not covered by this repo at all:"
             echo "  \`log4j-rce-patch-*.xml\` (see README.md)."
           } >> dist/RELEASE_NOTES.md
 

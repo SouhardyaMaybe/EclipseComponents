@@ -19,8 +19,8 @@ ourselves, so every binary the launcher loads can be audited and rebuilt.
 | `cacio-tta-17` | `cacio-tta-1.19.1-SNAPSHOT.jar` | caciocavallo Swing/TTA layer (JRE 17+) | vendored |
 | `cacio-agent-17` | `cacio-agent.jar` | caciocavallo java agent (JRE 17+) | vendored |
 | `mio-lib-patcher` | `MioLibPatcher.jar` | MioLibPatcher bytecode transform agent | vendored (no upstream license - see `UPSTREAM.md`) |
-| - | `ResConfHack.jar` | AWT resource-configuration hack | TODO rewrite (no public source found) |
-| - | `MioFabricAgent.jar` | Fabric launch agent | TODO rewrite (no public source found) |
+| `mio-fabric-agent` | `MioFabricAgent.jar` | Fabric installer profile-name injection agent | own rewrite (no public upstream source - see `UPSTREAM.md`) |
+| `resconf-hack` | `ResConfHack.jar` | JRE 8 DNS resolver configuration replacement (`sun.net.dns`) | own rewrite (derived from OpenJDK 8, GPL-2.0+CE - see `UPSTREAM.md`) |
 
 Per-module provenance (upstream URL, commit, license) is recorded in each
 module's `UPSTREAM.md`; the full research table lives in `NOTICE.md`.

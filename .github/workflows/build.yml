@@ -35,6 +35,10 @@ jobs:
             jdk: "17"
           - module: mio-lib-patcher
             jdk: "8"
+          - module: mio-fabric-agent
+            jdk: "8"
+          - module: resconf-hack
+            jdk: "8"
     name: ":${{ matrix.module }} (JDK ${{ matrix.jdk }})"
     steps:
       - name: Checkout
